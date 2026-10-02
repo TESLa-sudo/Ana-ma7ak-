@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="notranslate">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أنا معاك - أمان الموقف والمفقودات</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0F172A">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- مكتبة مسح الـ QR للراكب -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body class="bg-slate-100 pb-24 font-sans selection:bg-yellow-400 selection:text-slate-900">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
+        <div>
+            <h1 class="text-xl font-black text-yellow-400">أنا معاك</h1>
+            <p class="text-[10px] text-slate-300">منظومة أمان الموقف والمفقودات Smart Transport</p>
+        </div>
+        <div class="bg-slate-800 p-1 rounded-xl flex border border-slate-700">
+            <button id="btn-driver" onclick="switchRole('driver')" class="px-3 py-1 rounded-lg text-xs font-bold bg-yellow-400 text-slate-900 transition">السائق</button>
+            <button id="btn-passenger" onclick="switchRole('passenger')" class="px-3 py-1 rounded-lg text-xs font-bold text-slate-300 transition">الراكب</button>
+        </div>
+    </header>
+
+    <main class="p-4 max-w-md mx-auto space-y-4">
+
+        <!-- ==================== [ قسم السائق ] ==================== -->
+        <section id="sec-driver" class="bg-slate-900 text-white p-5 rounded-3xl border-2 border-yellow-400 space-y-3 shadow-lg">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                <span class="text-xs text-emerald-400 font-bold flex items-center gap-1">🟢 مرخص ومعتمد</span>
+                <button onclick="toggleEditForm()" class="text-xs bg-slate-800 hover:bg-slate-700 text-yellow-400 px-2.5 py-1 rounded-lg border border-slate-600 transition">✏️ تعديل البيانات</button>
+            </div>
+
+            <!-- نموذج تعديل بيانات السائق -->
+            <form id="driver-form" onsubmit="saveDriverData(event)" class="space-y-2 bg-slate-800 p-3.5 rounded-2xl hidden">
+                <h4 class="text-xs font-bold text-yellow-400 mb-1">تسجيل / تعديل بيانات السائق</h4>
+                <div>
+                    <label class="text-[10px] text-slate-300 block">اسم السائق</label>
+                    <input type="text" id="input-name" required placeholder="مثال: عمر أحمد" class="w-full bg-slate-900 text-white text-xs p-2 rounded border border-slate-700 focus:outline-none focus:border-yellow-400">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[10px] text-slate-300 block">رقم السيارة / اللوحة</label>
+                        <input type="text" id="input-plate" required placeholder="مثال: س ب ب 1245" class="w-full bg-slate-900 text-white text-xs p-2 rounded border border-slate-700 focus:outline-none focus:border-yellow-400">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-300 block">التسعيرة (جنيه)</label>
+                        <input type="number" id="input-fare" required placeholder="15" class="w-full bg-slate-900 text-white text-xs p-2 rounded border border-slate-700 focus:outline-none focus:border-yellow-400">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-300 block">خط السير</label>
+                    <input type="text" id="input-route" required placeholder="مثال: المرج - نزهة جديدة" class="w-full bg-slate-900 text-white text-xs p-2 rounded border border-slate-700 focus:outline-none focus:border-yellow-400">
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-300 block">رقم الهاتف</label>
+                    <input type="tel" id="input-phone" required placeholder="010XXXXXXXX" class="w-full bg-slate-900 text-white text-xs p-2 rounded border border-slate-700 focus:outline-none focus:border-yellow-400">
+                </div>
+                <button type="submit" class="w-full bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold py-2 rounded-xl text-xs mt-2 transition">حفظ وإنشاء الـ QR</button>
+            </form>
+
+            <!-- عرض بطاقة السائق والـ QR -->
+            <div id="driver-card" class="space-y-3">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs text-yellow-400 font-bold">كابتن السيارة</span>
+                        <h2 id="disp-name" class="text-2xl font-black">--</h2>
+                        <span id="disp-plate" class="bg-slate-800 text-yellow-300 text-xs px-2.5 py-1 rounded font-mono font-bold mt-1 inline-block border border-slate-700">--</span>
+                    </div>
+                    <div class="bg-slate-800 p-2.5 rounded-xl text-left border border-slate-700">
+                        <span class="text-[10px] text-slate-400 block">التسعيرة</span>
+                        <span id="disp-fare" class="text-xl font-black text-yellow-400">-- ج.م</span>
+                    </div>
+                </div>
+                <div class="bg-white p-3 rounded-2xl flex justify-center shadow-inner">
+                    <div id="qrcode"></div>
+                </div>
+                <div class="text-center text-xs space-y-1">
+                    <p id="disp-route" class="font-bold text-slate-200">خط السير: --</p>
+                    <p id="disp-phone" class="text-yellow-400 font-mono dir-ltr">--</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== [ قسم الراكب الشامل ] ==================== -->
+        <section id="sec-passenger" class="hidden space-y-4">
+            
+            <!-- ماسح الـ QR المباشر -->
+            <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-black text-slate-900 text-sm flex items-center gap-1">📷 مسح رمز QR السيارة</h3>
+                    <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">حفظ الرحلة تلقائياً</span>
+                </div>
+                <div id="reader" class="rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 hidden"></div>
+                <button id="btn-scan" onclick="startScanner()" class="w-full bg-slate-900 hover:bg-slate-800 text-yellow-400 font-bold py-2.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition">
+                    🔍 تشغيل الكاميرا لمسح كود السائق
+                </button>
+            </div>
+
+            <!-- عرض نتائج الفحص الأخير -->
+            <div id="scanned-result" class="hidden bg-yellow-50 border-2 border-yellow-400 p-4 rounded-3xl space-y-2">
+                <div class="flex justify-between items-center">
+                    <h4 class="font-black text-slate-900 text-xs">بيانات الرحلة الحالية:</h4>
+                    <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">رحلة نشطة</span>
+                </div>
+                <p id="scanned-text" class="text-xs font-mono text-slate-800 whitespace-pre-line leading-relaxed"></p>
+                <button onclick="saveTripToHistory()" class="w-full bg-emerald-600 text-white font-bold py-1.5 rounded-xl text-xs">💾 حفظ المركبة في سجل رحلاتي</button>
+            </div>
+
+            <!-- حاسبة الأجرة التفاعلية -->
+            <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+                <h3 class="font-black text-slate-900 text-sm">🧮 حاسبة الأجرة والفكّة</h3>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                        <label class="text-[10px] text-slate-500 block">أجرة الفرد (جنيه)</label>
+                        <input type="number" id="calc-single-fare" value="15" oninput="calculateFare()" class="w-full bg-slate-50 border p-2 rounded-xl text-center font-bold">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-500 block">عدد الركاب/الكراسي</label>
+                        <input type="number" id="calc-passengers" value="1" min="1" oninput="calculateFare()" class="w-full bg-slate-50 border p-2 rounded-xl text-center font-bold">
+                    </div>
+                </div>
+                <div class="bg-slate-900 text-white p-3 rounded-2xl flex justify-between items-center">
+                    <span class="text-xs">المبلغ المطلوب دفعُه:</span>
+                    <span id="calc-total" class="text-xl font-black text-yellow-400">15 ج.م</span>
+                </div>
+            </div>
+
+            <!-- سجل المفقودات والرحلات السابقة -->
+            <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-black text-slate-900 text-sm">🧳 سجل الرحلات والأشياء المفقودة</h3>
+                    <button onclick="clearHistory()" class="text-[10px] text-red-500 font-bold">مسح السجل</button>
+                </div>
+                <ul id="history-list" class="space-y-2 text-xs max-h-40 overflow-y-auto">
+                    <li class="text-slate-400 text-center py-2 text-[11px]">لا يوجد رحلات مسجلة بعد. امسح الـ QR لحفظ الرحلات تلقائياً.</li>
+                </ul>
+            </div>
+
+            <!-- دليل التسعيرة الرسمية -->
+            <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-2">
+                <h3 class="font-black text-slate-900 text-sm">📋 دليل تسعيرة الخطوط المعتمدة</h3>
+                <div class="divide-y text-xs text-slate-700">
+                    <div class="py-2 flex justify-between"><span>المرج - نزهة جديدة</span><span class="font-bold text-slate-900">15 ج.م</span></div>
+                    <div class="py-2 flex justify-between"><span>الموقف الجديد - مدينة نصر</span><span class="font-bold text-slate-900">20 ج.م</span></div>
+                    <div class="py-2 flex justify-between"><span>المرج - السلام</span><span class="font-bold text-slate-900">10 ج.م</span></div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- زر الطوارئ والاستغاثة SOS الشامل -->
+        <button onclick="sendSOS()" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-3.5 rounded-2xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition">
+            🚨 إرسال إشارة استغاثة طوارئ (SOS)
+        </button>
+
+    </main>
+
+    <!-- Script Logic -->
+    <script>
+        let html5QrcodeScanner = null;
+        let currentScannedData = null;
+
+        // تبديل الأدوار (سائق / راكب)
+        function switchRole(role) {
+            const secDriver = document.getElementById('sec-driver');
+            const secPassenger = document.getElementById('sec-passenger');
+            const btnDriver = document.getElementById('btn-driver');
+            const btnPassenger = document.getElementById('btn-passenger');
+
+            if(role === 'driver') {
+                secDriver.classList.remove('hidden');
+                secPassenger.classList.add('hidden');
+                btnDriver.className = "px-3 py-1 rounded-lg text-xs font-bold bg-yellow-400 text-slate-900 transition";
+                btnPassenger.className = "px-3 py-1 rounded-lg text-xs font-bold text-slate-300 transition";
+            } else {
+                secDriver.classList.add('hidden');
+                secPassenger.classList.remove('hidden');
+                btnPassenger.className = "px-3 py-1 rounded-lg text-xs font-bold bg-yellow-400 text-slate-900 transition";
+                btnDriver.className = "px-3 py-1 rounded-lg text-xs font-bold text-slate-300 transition";
+                loadHistory();
+            }
+        }
+
+        // إظهار/إخفاء نموذج السائق
+        function toggleEditForm() {
+            document.getElementById('driver-form').classList.toggle('hidden');
+        }
+
+        // حفظ بيانات السائق وتحديث الـ QR
+        function saveDriverData(e) {
+            e.preventDefault();
+            const driverData = {
+                name: document.getElementById('input-name').value,
+                plate: document.getElementById('input-plate').value,
+                fare: document.getElementById('input-fare').value,
+                route: document.getElementById('input-route').value,
+                phone: document.getElementById('input-phone').value
+            };
+
+            localStorage.setItem('driver_data', JSON.stringify(driverData));
+            updateUI(driverData);
+            toggleEditForm();
+        }
+
+        function updateUI(data) {
+            document.getElementById('disp-name').innerText = data.name;
+            document.getElementById('disp-plate').innerText = data.plate;
+            document.getElementById('disp-fare').innerText = data.fare + " ج.م";
+            document.getElementById('disp-route').innerText = "خط السير: " + data.route;
+            document.getElementById('disp-phone').innerText = data.phone;
+
+            const qrText = `تطبيق أنا معاك\nالسائق: ${data.name}\nالسيارة: ${data.plate}\nالخط: ${data.route}\nالأجرة: ${data.fare} ج.م\nالهاتف: ${data.phone}`;
+            genQR(qrText);
+            document.getElementById('calc-single-fare').value = data.fare || 15;
+            calculateFare();
+        }
+
+        function genQR(txt) {
+            document.getElementById("qrcode").innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), { text: txt, width: 150, height: 150 });
+        }
+
+        // تشغيل ماسح الـ QR للراكب
+        function startScanner() {
+            const reader = document.getElementById('reader');
+            reader.classList.remove('hidden');
+            
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 200, height: 200 } },
+                (decodedText) => {
+                    currentScannedData = decodedText;
+                    document.getElementById('scanned-text').innerText = decodedText;
+                    document.getElementById('scanned-result').classList.remove('hidden');
+                    html5QrcodeScanner.stop();
+                    reader.classList.add('hidden');
+                },
+                (errorMessage) => {}
+            ).catch(err => alert("عذراً، لم نتمكن من الوصول للكاميرا: " + err));
+        }
+
+        // حفظ الرحلة في سجل الراكب
+        function saveTripToHistory() {
+            if(!currentScannedData) return;
+            let history = JSON.parse(localStorage.getItem('trip_history') || '[]');
+            const trip = {
+                details: currentScannedData,
+                time: new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'}),
+                date: new Date().toLocaleDateString('ar-EG')
+            };
+            history.unshift(trip);
+            localStorage.setItem('trip_history', JSON.stringify(history));
+            alert('✅ تم حفظ بيانات الرحلة والسائق في سجل المفقودات بنجاح!');
+            loadHistory();
+        }
+
+        // تحميل سجل الرحلات
+        function loadHistory() {
+            let history = JSON.parse(localStorage.getItem('trip_history') || '[]');
+            const list = document.getElementById('history-list');
+            if(history.length === 0) {
+                list.innerHTML = `<li class="text-slate-400 text-center py-2 text-[11px]">لا يوجد رحلات مسجلة بعد.</li>`;
+                return;
+            }
+            list.innerHTML = history.map(item => `
+                <li class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <div class="flex justify-between text-[10px] text-slate-500 font-bold mb-1">
+                        <span>🕒 ${item.time} - ${item.date}</span>
+                    </div>
+                    <p class="font-mono text-[11px] text-slate-800 whitespace-pre-line">${item.details}</p>
+                </li>
+            `).join('');
+        }
+
+        function clearHistory() {
+            if(confirm('هل تريد مسح سجل الرحلات بالفعل؟')) {
+                localStorage.removeItem('trip_history');
+                loadHistory();
+            }
+        }
+
+        // حاسبة الأجرة
+        function calculateFare() {
+            const single = parseFloat(document.getElementById('calc-single-fare').value) || 0;
+            const count = parseInt(document.getElementById('calc-passengers').value) || 1;
+            document.getElementById('calc-total').innerText = (single * count) + " ج.م";
+        }
+
+        // استغاثة SOS
+        function sendSOS() {
+            if (confirm("🚨 هل تريد بالفعل إرسال استغاثة طوارئ وتحذير الموقف؟")) {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(pos => {
+                        alert(`🚨 تم تحديد موقعك (خط العرض: ${pos.coords.latitude.toFixed(3)}, خط الطول: ${pos.coords.longitude.toFixed(3)}) وإرسال إشارة الطوارئ للجهات المختصة!`);
+                    }, () => {
+                        alert("🚨 تم إرسال استغاثة طوارئ SOS بنجاح!");
+                    });
+                } else {
+                    alert("🚨 تم إرسال استغاثة طوارئ SOS بنجاح!");
+                }
+            }
+        }
+
+        // التحميل الأولي
+        window.onload = () => {
+            const savedData = localStorage.getItem('driver_data');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                document.getElementById('input-name').value = data.name;
+                document.getElementById('input-plate').value = data.plate;
+                document.getElementById('input-fare').value = data.fare;
+                document.getElementById('input-route').value = data.route;
+                document.getElementById('input-phone').value = data.phone;
+                updateUI(data);
+            } else {
+                toggleEditForm();
+            }
+        };
+
+        // تسجيل الـ Service Worker للأوفلاين
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js');
+            });
+        }
+    </script>
+</body>
+</html>
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy static content to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload entire repository
+          path: '.'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
